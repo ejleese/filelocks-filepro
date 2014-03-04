@@ -1,0 +1,18 @@
+:'##############################################################:'# 2014-02-06 ejl via web interface, user chooses a filepro to:
+:'#                check for locks on and this spits out results:'#                PID passed via @pm:
+:'#                filename passed via @pw::
+::declare fname:
+::fname="/tmp/chklock"{@pm:
+:@pm eq "":system "echo \"No PID given.\" > "<fname  ; end:
+:@pw eq "":system "echo \"No filename given.\" >" <fname; end:
+::n=opendir("*",@pw):
+:n le "0" 'file doesn' exist:goto dosys      'this is just to avoid making a garbage log entry:
+:        'tally up in log:lookup log = filelocks_log  k=(@pw)  i=B -npx:
+:not log:lookup log = filelocks_log  r=free  -n:
+:log(3) eq "":log(3)=@pw:
+::log(1)=log(1)+"1"; log(2)=@td:
+::write log; close log:
+dosys::zz= "lock.info" < @pw<" > " < fname:
+::system zz:
+::sync:
+::end:

@@ -1,0 +1,16 @@
+:'show most requested files to check file locks on::
+::declare pid; pid=@pm:
+::declare outfile;outfile="/tmp/toplocks_"{pid:
+::ct(1,.0)="1":
+::declare msg:
+:                'sorted by highest hits first, then date, then file:lookup log = filelocks_log  k=("99999999") i=A -ng:
+loglp:not log 'no files in log yet?:goto writeit:
+:log(1) le "0"           'skip control record etc:goto nxtlog:
+:msg ne "":msg=msg{","{log(3){"":
+:msg eq "":msg=log(3):
+nxtlog:ct lt "5":ct=ct+"1"; getnext log;goto loglp:
+writeit:::
+::zz=open(outfile,"wc0t"):
+::aa=writeline(zz,msg):
+::aa=close(zz);:
+::end:

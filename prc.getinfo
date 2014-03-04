@@ -1,0 +1,16 @@
+:'##############################################################:'# 2014-02-27 ejl get user name, extention. used on:
+:'#        http//bmc0904.borisch.local/getlocks.html:'#        @pm=output filename, @pw=username to check:
+::'system "echo \""{@pm<@pw{"\" | mutt -s prc.getinto ericl@borisch.com":
+:@pm eq "" or @pw eq ""          'no outfile or user defined:end:
+::declare fname:
+::fname=@pm:
+::zz=open(fname,"wc0t"):
+::lookup per = person  k=(@pw)  i=D -nx:
+:not per or @pw eq "filepro" or @pw eq "root":aa=writeline(zz,"unable to find information for user"<@pw); goto closeit:
+:not per:goto closeit:
+::declare extension; extension=per(212):
+:extension eq "":extension="unknown":
+::aa=writeline(zz,per(2)<per(1)<"- ext."<extension):
+closeit::aa=close(zz):
+::sync:
+::end:
