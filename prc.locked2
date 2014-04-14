@@ -1,6 +1,15 @@
 :'##############################################################:'# 2014-02-06 ejl via web interface, user chooses a filepro to:
 :'#                check for locks on and this spits out results:'#                PID passed via @pm:
 :'#                filename passed via @pw::
+:                        'should never see more than 99 locks on a file!:declare MAX_ARRAY(2,.0);MAX_ARRAY="99":
+::dim file_array(99)(32,*);clear file_array:
+::dim login_array(99)(8,*);clear login_array:
+::dim rec_array(99)(8,.0);clear rec_array:
+::dim pid_array(99)(8,.0);clear pid_array:
+::dim name_array(99)(40,*);clear name_array:
+::dim ext_array(99)(10,*);clear ext_array:
+::ct(2,.0)="0":
+::declare startpos(5,.0),endpos(5,.0);startpos="1";endpos="1":
 ::declare fname:
 ::fname="/tmp/chklock"{@pm:
 :@pm eq "":system "echo \"No PID given.\" > "<fname  ; end:
@@ -15,4 +24,44 @@
 dosys::zz= "lock.info" < @pw<" > " < fname:
 ::system zz:
 ::sync:
+::gosub eatfile:
+:       'arrays are now filled... dump into usable output format:gosub takedmp:
 ::end:
+eatfile:'look at the lockinfo results and chew it up into usable pieces:'there is a new line after each line of the output, but user and record# are on same line..:
+::import ascii infile = (fname) r=\n f=\n:
+:not infile:close infile; return:
+::declare bite;bite=""{infile(1):
+:bite co "is NOT a filePro File" or bite co "There are NO locks":end        'dont eat the file, just spit it out as is (leave it alone, end):
+::declare filepos,namepos,recpos,pidpos:
+::filepos=instr(bite,"File","1"):
+::recpos=instr(bite,"Record Number","1"):
+::namepos=instr(bite,"User","1"):
+::pidpos=instr(bite,"PID","1"):
+::'incrementing the counter on filepos hit because that marks a new set of data, so move to new empty 'line' in parallels:
+:filepos gt "0" and ct lt MAX_ARRAY   'first line of new block of info for a lock:ct=ct+"1"; file_array(ct)=""{mid(bite,filepos+"5",recpos-(filepos+"5")):
+:recpos gt "0":rec_array(ct)=""{mid(bite,recpos+"14","20"):
+:namepos gt "0":login_array(ct)=""{mid(bite,namepos+"5","10");gosub getinfo:
+:pidpos gt "0":pid_array(ct)=""{mid(bite,pidpos+"4","10"):
+::goto eatfile:
+getinfo:'get name and extension info::
+:namepos eq "0":return:
+::name_array(ct)="unknown"; ext_array(ct)="unknown":
+:login_array(ct) eq "root" or login_array(ct) eq "filepro":name_array(ct)="unknown";ext_array(ct)="unknown";return:
+::lookup per = person  k=(login_array(ct))   i=D -nx:
+:per:name_array(ct)=per(2)<per(1); ext_array(ct)=per(212):
+::return:
+takedmp:'unload digested data into file to read back in with script::
+::zz=open(fname,"0cwt"):
+:zz lt "0":return:
+::ct="1":
+grunt:login_array(ct) eq ""        'end of data:return:
+::declare line(300,*);:
+::line="File " & file_array(ct):
+::line=line<"&nbsp&nbspPID " & pid_array(ct):
+::line=line<"&nbsp &nbsp <b>Record " & rec_array(ct)&"</b>":
+::line=line<"&nbsp &nbsp Login " & login_array(ct):
+::line=line<"&nbsp &nbsp Name <b>" & name_array(ct)&"</b>":
+::line=line<"&nbsp &nbsp Ext. <b>" & ext_array(ct)&"</b>":
+::aa=writeline(zz,line<"<br>"):
+:ct lt MAX_ARRAY:ct=ct+"1";goto grunt:
+::return:
